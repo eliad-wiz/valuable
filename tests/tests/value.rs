@@ -290,6 +290,13 @@ fn test_valuable_box() {
 }
 
 #[test]
+fn test_valuable_box_str() {
+    let val = "asd".to_string().into_boxed_str();
+    let val = Valuable::as_value(&val);
+    assert!(matches!(val, Value::String(v) if v == "asd"));
+}
+
+#[test]
 fn test_option() {
     let val = Some(1_i32);
     let val = Valuable::as_value(&val);

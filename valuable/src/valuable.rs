@@ -106,6 +106,19 @@ deref! {
     alloc::sync::Arc<T>,
 }
 
+// explicit implementation since &str is valuable (in order to have visit_slice()
+// optimization), rather than str, and thus Box<str> is not valuable
+#[cfg(feature = "alloc")]
+impl Valuable for Box<str> {
+    fn as_value<'a>(&'a self) -> Value<'a> {
+        Value::String(self.as_ref())
+    }
+
+    fn visit(&self, visit: &mut dyn Visit) {
+        self.as_ref().visit(visit);
+    }
+}
+
 macro_rules! valuable {
     (
         $(
