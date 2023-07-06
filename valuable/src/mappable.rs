@@ -148,6 +148,26 @@ impl<K: Valuable, V: Valuable, S> Mappable for std::collections::HashMap<K, V, S
     }
 }
 
+#[cfg(feature = "hashbrown")]
+impl<K: Valuable, V: Valuable, S> Valuable for hashbrown::HashMap<K, V, S> {
+    fn as_value(&self) -> Value<'_> {
+        Value::Mappable(self)
+    }
+
+    fn visit(&self, visit: &mut dyn Visit) {
+        for (key, value) in self.iter() {
+            visit.visit_entry(key.as_value(), value.as_value());
+        }
+    }
+}
+
+#[cfg(feature = "hashbrown")]
+impl<K: Valuable, V: Valuable, S> Mappable for hashbrown::HashMap<K, V, S> {
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter().size_hint()
+    }
+}
+
 #[cfg(feature = "alloc")]
 impl<K: Valuable, V: Valuable> Valuable for alloc::collections::BTreeMap<K, V> {
     fn as_value(&self) -> Value<'_> {

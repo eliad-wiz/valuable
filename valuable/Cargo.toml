@@ -21,7 +21,7 @@ keywords = [
 ]
 
 [features]
-default = ["std"]
+default = ["std", "hashbrown"]
 
 # Provide derive(Valuable) macro
 derive = ["valuable-derive"]
@@ -34,6 +34,7 @@ alloc = []
 
 [dependencies]
 valuable-derive = { version = "0.1.0", optional = true, path = "../valuable-derive" }
+hashbrown = { version = "*", optional = true }
 
 [dev-dependencies]
 criterion = "0.3"
