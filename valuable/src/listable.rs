@@ -213,6 +213,8 @@ collection! {
     (T: Valuable + Ord) alloc::collections::BTreeSet<T>,
     #[cfg(feature = "std")]
     (T: Valuable + Eq + std::hash::Hash, H: std::hash::BuildHasher) std::collections::HashSet<T, H>,
+    #[cfg(feature = "hashbrown")]
+    (T: Valuable + Eq + std::hash::Hash, H: std::hash::BuildHasher) hashbrown::HashSet<T, H>,
 }
 
 #[cfg(feature = "alloc")]
