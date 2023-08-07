@@ -22,7 +22,7 @@ static ATTRS: &[AttrDef] = &[
     // #[valuable(transparent)]
     AttrDef {
         name: "transparent",
-        conflicts_with: &["rename"],
+        conflicts_with: &["rename", "as"],
         position: &[
             Position::Struct,
             // TODO: We can probably support single-variant enum that has a single field
@@ -33,7 +33,7 @@ static ATTRS: &[AttrDef] = &[
     // #[valuable(skip)]
     AttrDef {
         name: "skip",
-        conflicts_with: &["rename"],
+        conflicts_with: &["rename", "as"],
         position: &[
             // TODO: How do we implement Enumerable::variant and Valuable::as_value if a variant is skipped?
             // Position::Variant,
@@ -42,12 +42,20 @@ static ATTRS: &[AttrDef] = &[
         ],
         style: &[MetaStyle::Ident],
     },
+    // #[valuable(as = "...")]
+    AttrDef {
+        name: "as",
+        conflicts_with: &[],
+        position: &[Position::NamedField],
+        style: &[MetaStyle::NameValue],
+    },
 ];
 
 pub(crate) struct Attrs {
     rename: Option<(syn::MetaNameValue, syn::LitStr)>,
     transparent: Option<Span>,
     skip: Option<Span>,
+    as_type: Option<(syn::MetaNameValue, syn::LitStr)>,
 }
 
 impl Attrs {
@@ -56,6 +64,10 @@ impl Attrs {
             || syn::LitStr::new(&original.to_string(), original.span()),
             |(_, l)| l.clone(),
         )
+    }
+
+    pub(crate) fn as_type(&self) -> Option<syn::LitStr> {
+        self.as_type.as_ref().map(|(_, l)| l.clone())
     }
 
     pub(crate) fn transparent(&self) -> bool {
@@ -68,6 +80,7 @@ impl Attrs {
 }
 
 pub(crate) fn parse_attrs(cx: &Context, attrs: &[syn::Attribute], pos: Position) -> Attrs {
+    let mut as_type = None;
     let mut rename = None;
     let mut transparent = None;
     let mut skip = None;
@@ -104,6 +117,21 @@ pub(crate) fn parse_attrs(cx: &Context, attrs: &[syn::Attribute], pos: Position)
             "transparent" => transparent = Some(meta.span()),
             // #[valuable(skip)]
             "skip" => skip = Some(meta.span()),
+            // #[valuable(as = "...")]
+            "as" => {
+                let m = match meta {
+                    Meta::NameValue(m) => m,
+                    _ => unreachable!(),
+                };
+                let lit = match &m.value {
+                    syn::Expr::Lit(syn::ExprLit {
+                        lit: syn::Lit::Str(l),
+                        ..
+                    }) => l.clone(),
+                    _ => unreachable!(),
+                };
+                as_type = Some((m.clone(), lit));
+            }
 
             _ => unreachable!("{}", def.name),
         }
@@ -113,6 +141,7 @@ pub(crate) fn parse_attrs(cx: &Context, attrs: &[syn::Attribute], pos: Position)
         rename,
         transparent,
         skip,
+        as_type,
     }
 }
 
