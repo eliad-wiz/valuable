@@ -100,13 +100,27 @@ fn derive_struct(
                 .fields
                 .iter()
                 .enumerate()
-                .filter(|(i, _)| !field_attrs[*i].skip())
-                .map(|(_, field)| {
+                .filter_map(|(i, field)| {
+                    if field_attrs[i].skip() {
+                        return None;
+                    }
                     let f = field.ident.as_ref();
-                    let tokens = quote! {
-                        &self.#f
+                    let tokens = match field_attrs[i].as_type() {
+                        None => {
+                            quote! {
+                                &self.#f
+                            }
+                        },
+                        Some(t) => {
+                            let ident_str = t.value();
+                            let path: syn::Path = syn::parse_str(&ident_str).unwrap();
+                            let v = quote! {
+                                & #path::from(&self.#f)
+                            };
+                            v.into()
+                        }
                     };
-                    respan(tokens, &field.ty)
+                    Some(respan(tokens, &field.ty))
                 });
             visit_fields = quote! {
                 visitor.visit_named_fields(&::valuable::NamedValues::new(
