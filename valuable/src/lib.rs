@@ -155,3 +155,6 @@ pub use visit::{visit, Visit};
 
 #[cfg(feature = "derive")]
 pub use valuable_derive::Valuable;
+
+#[cfg(feature = "json")]
+mod json;
