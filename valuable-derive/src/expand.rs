@@ -96,32 +96,41 @@ fn derive_struct(
                 )
             };
 
-            let fields = data
-                .fields
-                .iter()
-                .enumerate()
-                .filter_map(|(i, field)| {
-                    if field_attrs[i].skip() {
-                        return None;
-                    }
-                    let f = field.ident.as_ref();
-                    let tokens = match field_attrs[i].as_type() {
-                        None => {
-                            quote! {
-                                &self.#f
-                            }
-                        },
-                        Some(t) => {
-                            let ident_str = t.value();
-                            let path: syn::Path = syn::parse_str(&ident_str).unwrap();
-                            let v = quote! {
-                                & #path::from(&self.#f)
-                            };
-                            v.into()
+            let fields = data.fields.iter().enumerate().filter_map(|(i, field)| {
+                if field_attrs[i].skip() {
+                    return None;
+                }
+                let f = field.ident.as_ref();
+                let tokens = match field_attrs[i].as_type() {
+                    None => {
+                        quote! {
+                            &self.#f
                         }
-                    };
-                    Some(respan(tokens, &field.ty))
-                });
+                    }
+                    Some(t) => {
+                        let ident_str = t.value();
+                        let path: syn::Path = syn::parse_str(&ident_str).unwrap();
+
+                        // support "valuable(as = "Option<...>") notation
+                        let v = if ident_str.starts_with("Option<") {
+                            // strip "Option<...>"
+                            let inner_type = ident_str.strip_prefix("Option<").unwrap();
+                            let inner_type = inner_type.strip_suffix(">").unwrap();
+                            let inner_type: syn::Path = syn::parse_str(&inner_type).unwrap();
+                            // and use Option::map to convert the inner type
+                            quote! {
+                                & self.#f.as_ref().map(#inner_type::from)
+                            }
+                        } else {
+                            quote! {
+                                & #path::from(&self.#f)
+                            }
+                        };
+                        v.into()
+                    }
+                };
+                Some(respan(tokens, &field.ty))
+            });
             visit_fields = quote! {
                 visitor.visit_named_fields(&::valuable::NamedValues::new(
                     #named_fields_static_name,

@@ -194,6 +194,36 @@ fn test_transparent() {
     assert!(matches!(Valuable::as_value(&T('a')), Value::Char('a')));
 }
 
+#[test]
+fn test_as() {
+    struct S {
+        f: u8,
+    }
+
+    #[derive(Valuable)]
+    #[valuable(transparent)]
+    struct V {
+        f: u8,
+    }
+
+    impl From<&S> for V {
+        fn from(s: &S) -> Self {
+            Self { f: s.f }
+        }
+    }
+
+    #[derive(Valuable)]
+    struct T {
+        #[valuable(as = "Option<V>")]
+        v: Option<S>,
+    }
+
+    let t = T {
+        v: Some(S { f: 88 }),
+    };
+    assert_eq!(format!("{:?}", t.as_value()), "T { v: 88 }");
+}
+
 #[rustversion::attr(not(stable), ignore)]
 #[test]
 fn ui() {
