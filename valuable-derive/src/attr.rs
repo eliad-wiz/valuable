@@ -22,7 +22,7 @@ static ATTRS: &[AttrDef] = &[
     // #[valuable(transparent)]
     AttrDef {
         name: "transparent",
-        conflicts_with: &["rename", "as"],
+        conflicts_with: &["rename", "r#as"],
         position: &[
             Position::Struct,
             // TODO: We can probably support single-variant enum that has a single field
@@ -33,7 +33,7 @@ static ATTRS: &[AttrDef] = &[
     // #[valuable(skip)]
     AttrDef {
         name: "skip",
-        conflicts_with: &["rename", "as"],
+        conflicts_with: &["rename", "r#as"],
         position: &[
             // TODO: How do we implement Enumerable::variant and Valuable::as_value if a variant is skipped?
             // Position::Variant,
@@ -44,7 +44,7 @@ static ATTRS: &[AttrDef] = &[
     },
     // #[valuable(as = "...")]
     AttrDef {
-        name: "as",
+        name: "r#as",
         conflicts_with: &[],
         position: &[Position::NamedField],
         style: &[MetaStyle::NameValue],
@@ -118,7 +118,7 @@ pub(crate) fn parse_attrs(cx: &Context, attrs: &[syn::Attribute], pos: Position)
             // #[valuable(skip)]
             "skip" => skip = Some(meta.span()),
             // #[valuable(as = "...")]
-            "as" => {
+            "r#as" => {
                 let m = match meta {
                     Meta::NameValue(m) => m,
                     _ => unreachable!(),
@@ -359,6 +359,29 @@ impl Drop for Context {
     }
 }
 
+fn replace_identifiers_tokens_with_raw(list: &syn::MetaList) -> syn::MetaList {
+    // due to syn bug/limitation we need to replace "as" with raw identifier, so it
+    // won't get parsed as keyword.
+    // https://github.com/jonasbb/serde_with/pull/578/commits/c22f165d29d7d6746de782c897d29ad3033a5dbf
+    let mut metalist = list.clone();
+    metalist.tokens = std::mem::take(&mut metalist.tokens)
+        .into_iter()
+        .map(|token| {
+            use proc_macro2::{Ident, TokenTree};
+
+            // Replace `as` with `r#as`.
+            match token {
+                TokenTree::Ident(ident) if ident == "as" => {
+                    TokenTree::Ident(Ident::new_raw("as", ident.span()))
+                }
+                _ => token,
+            }
+        })
+        .collect();
+
+    metalist
+}
+
 fn filter_attrs<'a>(
     cx: &'a Context,
     attrs: &'a [syn::Attribute],
@@ -369,7 +392,7 @@ fn filter_attrs<'a>(
         .iter()
         .filter(|attr| attr.path().is_ident(ATTR_NAME))
         .filter_map(move |attr| match &attr.meta {
-            Meta::List(list) => match list
+            Meta::List(list) => match replace_identifiers_tokens_with_raw(list)
                 .parse_args_with(Punctuated::<syn::Meta, syn::Token![,]>::parse_terminated)
             {
                 Ok(list) => Some(list),
