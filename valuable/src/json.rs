@@ -42,7 +42,7 @@ impl Valuable for Json {
     }
 }
 
-impl Valuable for Map<String, Json> {
+impl Valuable for Map<alloc::string::String, Json> {
     fn as_value(&self) -> Value<'_> {
         Value::Mappable(self)
     }
@@ -54,7 +54,7 @@ impl Valuable for Map<String, Json> {
     }
 }
 
-impl Mappable for Map<String, Json> {
+impl Mappable for Map<alloc::string::String, Json> {
     fn size_hint(&self) -> (usize, Option<usize>) {
         let len = self.len();
         (len, Some(len))

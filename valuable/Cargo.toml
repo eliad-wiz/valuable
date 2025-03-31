@@ -30,7 +30,7 @@ derive = ["valuable-derive"]
 std = ["alloc"]
 
 # Provides serde_json::Value instrument for valuable
-json = ["serde_json"]
+json = ["dep:serde_json", "alloc"]
 
 # Provide imps for types in Rust's `alloc` library.
 alloc = []

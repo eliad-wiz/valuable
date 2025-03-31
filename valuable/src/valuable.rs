@@ -109,7 +109,7 @@ deref! {
 // explicit implementation since &str is valuable (in order to have visit_slice()
 // optimization), rather than str, and thus Box<str> is not valuable
 #[cfg(feature = "alloc")]
-impl Valuable for Box<str> {
+impl Valuable for alloc::boxed::Box<str> {
     fn as_value<'a>(&'a self) -> Value<'a> {
         Value::String(self.as_ref())
     }
