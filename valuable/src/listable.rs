@@ -214,7 +214,7 @@ collection! {
     #[cfg(feature = "std")]
     (T: Valuable + Eq + std::hash::Hash, H: std::hash::BuildHasher) std::collections::HashSet<T, H>,
     #[cfg(feature = "hashbrown")]
-    (T: Valuable + Eq + std::hash::Hash, H: std::hash::BuildHasher) hashbrown::HashSet<T, H>,
+    (T: Valuable + Eq + core::hash::Hash, H: core::hash::BuildHasher) hashbrown::HashSet<T, H>,
 }
 
 #[cfg(feature = "alloc")]
